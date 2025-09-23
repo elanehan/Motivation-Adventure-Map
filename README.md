@@ -1,8 +1,8 @@
 # Motivation Adventure Map
 
 A gamified job search dashboard where you conquer quests, defeat bosses, and level up your career journey—all visualized on a vibrant fantasy map.
-![Demo of Adventure Map](screenshot-1.png)
-![Screenshot](screenshot-2.png)
+![Demo of Adventure Map](Screenshot-1.png)
+![Screenshot](Screenshot-2.png)
 
 ## Features
 - Upload your own quests via CSV

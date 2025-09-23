@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adventure Map - Job Searching Quest</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💸</text></svg>">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🗺️ Adventure Map - Get Your Job Offer</h1>
+            <div class="xp-counter">
+                Level <span id="playerLevel">1</span> (<span id="currentXP">0</span> / <span id="nextLevelXP">100</span> XP) ⭐
+            </div>
+        </header>
+
+        <div id="three-map-container">
+            <div id="three-map-canvas"></div>
+            <div class="map-labels">
+                <div class="map-label" id="label-mountains">Mountains</div>
+                <div class="map-label" id="label-kingdom">Kingdom</div>
+                <div class="map-label" id="label-forest">Forest</div>
+                <div class="map-label" id="label-ocean">Ocean</div>
+            </div>
+        </div>
+
+        <div class="setup-section">
+            <div class="setup-header">
+                <span>Data Integration</span>
+            </div>
+            
+            <div class="instructions">
+                <h4>Adventurer's Setup Scroll:</h4>
+                <ol>
+                    <li>🧙‍♂️ <strong>Summon Sample Quests:</strong> Click <strong>Load Sample Data</strong> to conjure a ready-made quest scroll, or begin your own legend by importing your quests.</li>
+                    <li>📜 <strong>Import Quests:</strong> Use the magic portal below to <strong>Import New Quests</strong> from your CSV scroll, or choose <strong>Restore Backup</strong> to continue your adventure history.</li>
+                    <li style="margin-top:0; list-style:none; padding-left:2em; color:#1976d2; font-size:0.98em;">↳ <em>Format:</em> <code>Region, Task, Is_Boss</code> &mdash; e.g. <code>Forest, Solve 2 Easy LeetCode Problems, FALSE</code></li>
+                    <li>💾 <strong>Export Your Progress:</strong> Safeguard your journey by clicking <strong>Export My Quests (Backup)</strong> and storing your quest log for future tales.</li>
+                </ol>
+            </div>
+            <div class="import-container">
+                <span>Import from a CSV file:</span>
+                <select id="importModeSelect" class="setup-input">
+                    <option value="add">Import New Quests</option>
+                    <option value="overwrite">Restore Backup</option>
+                </select>
+                <input type="file" id="csvFile" accept=".csv" class="setup-input" onchange="handleCSVUpload(event)">
+            </div>
+            <div>
+                <button class="btn-connect" onclick="loadSampleData()">Load Sample Data</button>
+                <button class="btn-template" onclick="exportQuestsToCSV()">Export My Quests (Backup)</button>
+            </div>
+            <div id="connectionStatus" class="connection-status" style="display: none;"></div>
+        </div>
+
+        <div class="map-container">
+            <div class="region forest">
+                <div class="region-header">
+                    <span class="region-emoji">🌳</span>
+                    <span class="region-title">Forest of Algorithms</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="forestProgress" style="width: 0%"></div>
+                </div>
+                <p><strong>Progress:</strong> <span id="forestCount">0/0</span></p>
+                
+                <div id="forestQuests">
+                    </div>
+                
+                <div class="boss-section">
+                    <div class="boss-title">♜ Weekly Boss Fight</div>
+                    <div id="forestBoss">
+                        </div>
+                </div>
+            </div>
+
+            <div class="region mountains">
+                 <div class="region-header">
+                    <span class="region-emoji">⛰️</span>
+                    <span class="region-title">Mountains of Systems</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="mountainsProgress" style="width: 0%"></div>
+                </div>
+                <p><strong>Progress:</strong> <span id="mountainsCount">0/0</span></p>
+                
+                <div id="mountainsQuests">
+                    </div>
+                
+                <div class="boss-section">
+                    <div class="boss-title">♜ Weekly Boss Fight</div>
+                    <div id="mountainsBoss">
+                        </div>
+                </div>
+            </div>
+
+            <div class="region ocean">
+                 <div class="region-header">
+                    <span class="region-emoji">🌊</span>
+                    <span class="region-title">Ocean of Projects</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="oceanProgress" style="width: 0%"></div>
+                </div>
+                <p><strong>Progress:</strong> <span id="oceanCount">0/0</span></p>
+
+                <div id="oceanQuests">
+                    </div>
+                
+                <div class="boss-section">
+                    <div class="boss-title">♜ Weekly Boss Fight</div>
+                    <div id="oceanBoss">
+                        </div>
+                </div>
+            </div>
+
+            <div class="region kingdom">
+                 <div class="region-header">
+                    <span class="region-emoji">🏰</span>
+                    <span class="region-title">Kingdom of Interviews</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="kingdomProgress" style="width: 0%"></div>
+                </div>
+                <p><strong>Progress:</strong> <span id="kingdomCount">0/0</span></p>
+                
+                <div id="kingdomQuests">
+                    </div>
+                
+                <div class="boss-section">
+                    <div class="boss-title">♜ Weekly Boss Fight</div>
+                    <div id="kingdomBoss">
+                        </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="guild-board">
+            <div class="board-header">
+                <h2>📜 Guild Quest Board</h2>
+                <p>Adventurer! Take new quests here!</p>
+                <p>(Update the To Do section in your CSV file)</p> 
+                <div class="add-quest-form">
+                    <input type="text" id="newQuestInput" placeholder="Enter new quest name...">
+                    <select id="newQuestRegion">
+                        <option value="Forest">🌲 Forest</option>
+                        <option value="Mountains">⛰️ Mountains</option>
+                        <option value="Ocean">🌊 Ocean</option>
+                        <option value="Kingdom">🏰 Kingdom</option>
+                    </select>
+                    
+                    <div class="boss-checkbox-wrapper">
+                        <input type="checkbox" id="newQuestIsBoss">
+                        <label for="newQuestIsBoss">♖ Boss Quest?</label>
+                    </div>
+                    
+                    <button id="addQuestBtn" class="btn-primary">Add Quest</button>
+                </div>
+            </div>
+            <div class="board-columns"> 
+                <div class="board-column">
+                    <div class="column-header todo">📋 To Do</div>
+                    <div id="todoTasks">
+                        </div>
+                </div>
+                <div class="board-column">
+                    <div class="column-header in-progress">⚡ In Progress</div>
+                    <div id="inProgressTasks">
+                        <div class="task-item">No tasks in progress.</div>
+                    </div>
+                </div>
+                <div class="board-column">
+                    <div class="column-header done">✅ Done</div>
+                    <div id="doneTasks">
+                        </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number" id="streak">0</div>
+                <div>Day Streak</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="completedQuests">0</div>
+                <div>Quests Completed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="bossesDefeated">0</div>
+                <div>Bosses Defeated</div>
+            </div>
+        </div>
+
+        <div class="rewards-section">
+            <h2>💰 Adventure Rewards</h2>
+            
+            <div class="reward-item">
+                <strong>Daily Reward ☀️ (Complete at least 1 quest in each region today)</strong><br>
+                "Every single step counts. Keep it up!" (+19 XP 🧪)
+            </div>
+            <button id="claimDailyBtn" class="btn-primary" onclick="claimDailyReward()" disabled>Claim Daily Reward</button>
+
+            <div class="reward-item">
+                <strong>Weekly Reward 🏆 (Defeat all 4 Bosses in a week)</strong><br>
+                "You are one step closer to being the master of job hunting!" (+100 XP 🎖️)
+            </div>
+            <button id="claimWeeklyBtn" class="btn-primary" onclick="claimWeeklyReward()" disabled>Claim Weekly Reward</button>
+
+            <div class="reward-item">
+                <strong>Monthly Milestone 🌟 (Real-world treat)</strong><br>
+                "A true master knows when to rest. Go celebrate your victory!"
+            </div>
+            <button id="claimMonthlyBtn" class="btn-primary" onclick="claimMonthlyReward()" disabled>Claim Monthly Milestone</button>
+        </div>
+    </div>
+
+    <script src="threeMap.js"></script> 
+    <script src="app.js"></script>
+</body>
+</html>

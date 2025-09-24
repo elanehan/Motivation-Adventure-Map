@@ -15,6 +15,40 @@ const REGION_EMOJIS = {
     "Kingdom": "🏰"
 };
 
+function openSettings() {
+    // Load current settings into the panel, if they exist
+    if (sheetData && sheetData.config) {
+        document.getElementById('inputAdventureName').value = sheetData.config.AdventureName || '';
+        document.getElementById('inputRegion1Name').value = sheetData.config.Region1_Name || '';
+        document.getElementById('inputRegion2Name').value = sheetData.config.Region2_Name || '';
+        document.getElementById('inputRegion3Name').value = sheetData.config.Region3_Name || '';
+        document.getElementById('inputRegion4Name').value = sheetData.config.Region4_Name || '';
+    }
+    document.getElementById('settingsPanel').style.display = 'flex';
+}
+
+function closeSettings() {
+    document.getElementById('settingsPanel').style.display = 'none';
+}
+
+function saveSettings() {
+    // Create a config object if it doesn't exist
+    if (!sheetData) sheetData = { allTasks: [], stats: {}, config: {} };
+    if (!sheetData.config) sheetData.config = {};
+
+    // Read values from the form
+    sheetData.config.AdventureName = document.getElementById('inputAdventureName').value;
+    sheetData.config.Region1_Name = document.getElementById('inputRegion1Name').value;
+    sheetData.config.Region2_Name = document.getElementById('inputRegion2Name').value;
+    sheetData.config.Region3_Name = document.getElementById('inputRegion3Name').value;
+    sheetData.config.Region4_Name = document.getElementById('inputRegion4Name').value;
+    
+    saveToLocal();
+    closeSettings();
+    loadDataFromSheet();
+    showStatus('Settings saved!', 'connected', 3000);
+}
+
 function showStatus(message, type = 'loading', duration = null) {
     const status = document.getElementById('connectionStatus');
     if (!status) return; 
@@ -70,6 +104,13 @@ function loadSampleData() {
     const sampleCSV = generateSheetTemplate();
     try {
         sheetData = parseCSVToTemplateData(sampleCSV); // Parse the default template
+        sheetData.config = {
+            AdventureName: "Get Your Job Offer",
+            Region1_Name: "Forest of Algorithms",
+            Region2_Name: "Mountains of Systems",
+            Region3_Name: "Ocean of Projects",
+            Region4_Name: "Kingdom of Interviews"
+        };
         isConnected = true;
         totalXP = sheetData.stats.totalXP || 0;
         
@@ -195,6 +236,13 @@ function parseCSVToTemplateData(csvText) {
 
 // ---This is now the "brain" of the app ---
 function loadDataFromSheet() {
+    if (sheetData && sheetData.config) {
+        document.getElementById('adventureName').textContent = sheetData.config.AdventureName || 'My Adventure Map';
+        document.getElementById('forest-title').textContent = sheetData.config.Region1_Name || 'Forest';
+        document.getElementById('mountains-title').textContent = sheetData.config.Region2_Name || 'Mountains';
+        document.getElementById('ocean-title').textContent = sheetData.config.Region3_Name || 'Ocean';
+        document.getElementById('kingdom-title').textContent = sheetData.config.Region4_Name || 'Kingdom';
+    }
     if (!sheetData || !sheetData.allTasks) {
         console.error("sheetData is missing or malformed.", sheetData);
         return;
@@ -279,9 +327,7 @@ function loadDataFromSheet() {
     loadGuildBoard(tasksData);
 
     // 6. Load Stats UI
-    sheetData.stats.completedQuests = completedQuests;
-    sheetData.stats.bossesDefeated = completedBosses; 
-    loadStats(sheetData.stats);
+    loadStats({ ...sheetData.stats, completedQuests, bossesDefeated: completedBosses });
     
     // 7. Load Leveling UI
     updateLevel(sheetData.stats.totalXP);
@@ -459,9 +505,9 @@ function createTaskElement(task) {
 }
 
 function loadStats(stats) {
-    document.getElementById('streak').textContent = stats.streak;
-    document.getElementById('completedQuests').textContent = stats.completedQuests;
-    document.getElementById('bossesDefeated').textContent = stats.bossesDefeated;
+    document.getElementById('streak').textContent = stats.streak || 0;
+    document.getElementById('completedQuests').textContent = stats.completedQuests || 0;
+    document.getElementById('bossesDefeated').textContent = stats.bossesDefeated || 0;
 }
 
 // --- Leveling System UI ---
@@ -557,9 +603,7 @@ function completeTask(button, xp, task, isBoss) {
     button.disabled = true;
     ThreeMap.updateQuestStatus(task.id, 'done');
     button.parentElement.classList.add('completed');
-    
-    updateLevel(totalXP);
-    
+        
     // 5. Show celebration
     showCelebration(xp, isBoss, isBoss ? `BOSS DEFEATED! +${xp} XP!` : `Quest Complete! +${xp} XP!`);
     
@@ -865,6 +909,20 @@ document.addEventListener('DOMContentLoaded', function() {
     const addBtn = document.getElementById('addQuestBtn');
     if (addBtn) {
         addBtn.addEventListener('click', addNewQuest);
+    }
+    const settingsBtn = document.getElementById('settingsBtn');
+    if (settingsBtn) {
+        settingsBtn.addEventListener('click', openSettings);
+    }
+    
+    const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+    if (closeSettingsBtn) {
+        closeSettingsBtn.addEventListener('click', closeSettings);
+    }
+
+    const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+    if (saveSettingsBtn) {
+        saveSettingsBtn.addEventListener('click', saveSettings);
     }
     
     // Auto-load from local storage if available

@@ -10,9 +10,35 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 </head>
 <body>
+    <div id="settingsPanel" class="settings-overlay" style="display: none;">
+        <div class="settings-content">
+            <h2>Customize Your Adventure</h2>
+            <div class="settings-form">
+                <label for="inputAdventureName">Adventure Name:</label>
+                <input type="text" id="inputAdventureName" placeholder="e.g., Get Your Job Offer">
+
+                <label for="inputRegion1Name">🌳 Forest Name:</label>
+                <input type="text" id="inputRegion1Name" placeholder="e.g., Forest of Algorithms">
+                
+                <label for="inputRegion2Name">⛰️ Mountains Name:</label>
+                <input type="text" id="inputRegion2Name" placeholder="e.g., Mountains of Systems">
+
+                <label for="inputRegion3Name">🌊 Ocean Name:</label>
+                <input type="text" id="inputRegion3Name" placeholder="e.g., Ocean of Projects">
+
+                <label for="inputRegion4Name">🏰 Kingdom Name:</label>
+                <input type="text" id="inputRegion4Name" placeholder="e.g., Kingdom of Interviews">
+            </div>
+            <div class="settings-actions">
+                <button id="saveSettingsBtn" class="btn-primary">Save Settings</button>
+                <button id="closeSettingsBtn" class="btn-secondary">Close</button>
+            </div>
+        </div>
+</div>
     <div class="container">
         <header class="header">
-            <h1>🗺️ Adventure Map - Get Your Job Offer</h1>
+            <h1>🗺️ <span id="adventureName">Adventure Map</span></h1>
+            <button id="settingsBtn" class="settings-btn">⚙️ Settings</button>
             <div class="xp-counter">
                 Level <span id="playerLevel">1</span> (<span id="currentXP">0</span> / <span id="nextLevelXP">100</span> XP) ⭐
             </div>
@@ -61,7 +87,7 @@
             <div class="region forest">
                 <div class="region-header">
                     <span class="region-emoji">🌳</span>
-                    <span class="region-title">Forest of Algorithms</span>
+                    <span class="region-title" id="forest-title">Forest of Algorithms</span>
                 </div>
                 <div class="progress-bar">
                     <div class="progress-fill" id="forestProgress" style="width: 0%"></div>
@@ -81,7 +107,7 @@
             <div class="region mountains">
                  <div class="region-header">
                     <span class="region-emoji">⛰️</span>
-                    <span class="region-title">Mountains of Systems</span>
+                    <span class="region-title" id="mountains-title">Mountains of Systems</span>
                 </div>
                 <div class="progress-bar">
                     <div class="progress-fill" id="mountainsProgress" style="width: 0%"></div>
@@ -101,7 +127,7 @@
             <div class="region ocean">
                  <div class="region-header">
                     <span class="region-emoji">🌊</span>
-                    <span class="region-title">Ocean of Projects</span>
+                    <span class="region-title" id="ocean-title">Ocean of Projects</span>
                 </div>
                 <div class="progress-bar">
                     <div class="progress-fill" id="oceanProgress" style="width: 0%"></div>
@@ -121,7 +147,7 @@
             <div class="region kingdom">
                  <div class="region-header">
                     <span class="region-emoji">🏰</span>
-                    <span class="region-title">Kingdom of Interviews</span>
+                    <span class="region-title" id="kingdom-title">Kingdom of Interviews</span>
                 </div>
                 <div class="progress-bar">
                     <div class="progress-fill" id="kingdomProgress" style="width: 0%"></div>

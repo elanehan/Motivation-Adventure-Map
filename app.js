@@ -71,10 +71,13 @@ function exportQuestsToCSV() {
     let csvContent = "# --- Your Adventure Map Backup ---\r\n";
     csvContent += "# This file contains all your current quests and stats.\r\n";
     csvContent += "## TASKS\r\n";
-    csvContent += "Region,Task,Status,Is_Boss,ID\r\n";
+    csvContent += "Region,Task,Status,Is_Boss,ID,Description,CompletionDate\r\n";
     
     sheetData.allTasks.forEach(task => {
-        csvContent += `${task.region},"${task.task}",${task.status},${task.isBoss ? 'TRUE' : 'FALSE'},${task.id}\r\n`;
+        // Handle potentially missing data and wrap the description in quotes
+        const description = task.description ? `"${task.description.replace(/"/g, '""')}"` : '""';
+        const completionDate = task.completionDate || '';
+        csvContent += `${task.region},"${task.task}",${task.status},${task.isBoss ? 'TRUE' : 'FALSE'},${task.id},${description},${completionDate}\r\n`;
     });
     
     csvContent += "\r\n## STATS\r\n";
@@ -103,9 +106,33 @@ function exportQuestsToCSV() {
 function loadSampleData() {
     const sampleCSV = generateSheetTemplate();
     try {
-        sheetData = parseCSVToTemplateData(sampleCSV); // Parse the default template
+        // Parse sampleCSV directly for sample data
+        const lines = sampleCSV.split(/\r?\n/)
+            .map(l => l.trim())
+            .filter(l => l && !l.startsWith('#') && !l.startsWith('##'));
+        let allTasks = [];
+        lines.forEach((line, idx) => {
+            if (idx === 0 && line.toLowerCase().startsWith('region')) return;
+            const parts = line.split(',').map(p => p.trim().replace(/"/g, ''));
+            const [region, task, isBoss, description] = parts;
+            if (region && task) {
+                allTasks.push({
+                    id: `task-${Math.random().toString(36).slice(2, 11)}`,
+                    region,
+                    task,
+                    status: 'todo',
+                    isBoss: (isBoss || '').toUpperCase() === 'TRUE',
+                    description: (description || ''),
+                    completionDate: null
+                });
+            }
+        });
+        sheetData = {
+            allTasks,
+            stats: { streak: 0, totalXP: 0, lastCompletedDate: null, currentWeekStartDate: null, monthlyRewardClaimed: false, lastMonthLevel: 0, lastMonthlyClaim: null }
+        };
         sheetData.config = {
-            AdventureName: "Get Your Job Offer",
+            AdventureName: "Adventure Map - Get Your Job Offer",
             Region1_Name: "Forest of Algorithms",
             Region2_Name: "Mountains of Systems",
             Region3_Name: "Ocean of Projects",
@@ -113,10 +140,7 @@ function loadSampleData() {
         };
         isConnected = true;
         totalXP = sheetData.stats.totalXP || 0;
-        
-        // This save is important, so refreshData() works
-        saveToLocal(); 
-        
+        saveToLocal();
         loadDataFromSheet();
         showStatus('✅ Sample data loaded from built-in template.', 'connected');
     } catch (err) {
@@ -156,18 +180,24 @@ function handleCSVUpload(event) {
 
         } else { // 'add' is the default mode
             try {
-                const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l && !l.startsWith('#'));
+                const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l && !l.startsWith('#') && !l.startsWith('##'));
                 let questsAdded = 0;
+
                 lines.forEach((line, idx) => {
-                    if (idx === 0 && line.toLowerCase().startsWith('region')) return; // skip header
-                    const [region, task, isBoss] = line.split(',');
+                    // Skip the header row if it exists
+                    if (idx === 0 && line.toLowerCase().startsWith('region')) return; 
+
+                    // Simple split for the new format
+                    const [region, task, isBoss, description] = line.split(',');
                     if (region && task) {
                         const newTask = {
                             id: `task-${Math.random().toString(36).slice(2, 11)}`,
                             region: region.trim(),
-                            task: task.trim(),
-                            status: 'todo',
-                            isBoss: (isBoss || '').toUpperCase().trim() === 'TRUE'
+                            task: task.trim().replace(/"/g, ''), // Remove quotes
+                            status: 'todo', // Always add as 'todo' for new quests
+                            isBoss: (isBoss || '').toUpperCase().trim() === 'TRUE',
+                            description: (description || '').trim().replace(/"/g, ''),
+                            completionDate: null 
                         };
                         sheetData.allTasks.push(newTask);
                         questsAdded++;
@@ -205,14 +235,16 @@ function parseCSVToTemplateData(csvText) {
 
         if (currentSection === "TASKS") {
             if (line.startsWith('Region,')) continue;
-            const [region, task, status, isBoss, id] = line.split(',');
+            const [region, task, status, isBoss, id, description, completionDate] = line.split(',');
             if (region && task && status) {
                 allTasks.push({
                     id: (id ? id.trim() : `task-${Math.random().toString(36).slice(2, 11)}`),
                     region: region.trim(),
                     task: task.trim(),
-                    status: status.trim().toLowerCase(),
-                    isBoss: (isBoss || '').toUpperCase() === 'TRUE'
+                    status: status.trim().toLowerCase(), // Use status from CSV for restore backup
+                    isBoss: (isBoss || '').toUpperCase() === 'TRUE',
+                    description: (description || '').trim().replace(/"/g, ''), // Remove quotes
+                    completionDate: (completionDate || null)
                 });
             }
         } else if (currentSection === "STATS") {
@@ -346,66 +378,44 @@ function loadRegionQuests(regionKey, regionData) {
     const questsContainer = document.getElementById(`${regionKey}Quests`);
     const bossContainer = document.getElementById(`${regionKey}Boss`);
 
-    questsContainer.innerHTML = ''; // Clear quests
+    questsContainer.innerHTML = '';
     const questsFragment = document.createDocumentFragment();
     
-    if (regionData.quests.length > 0) {
-        regionData.quests.forEach(quest => {
-            if (!quest.completed) {
-    
-                const questElement = document.createElement('div');
-                questElement.className = 'quest-item';
-                
-                const span = document.createElement('span');
-                span.textContent = quest.task;
-                
-                const button = document.createElement('button');
-                button.className = 'quest-btn';
-                button.textContent = `Complete (+${DEFAULT_QUEST_XP} XP)`;
-                
-                button.addEventListener('click', () => {
-                    completeQuest(button, DEFAULT_QUEST_XP, quest); 
-                });
-                
-                questElement.appendChild(span);
-                questElement.appendChild(button);
-                questsFragment.appendChild(questElement);
+    // Handle Regular Quests
+    regionData.quests.forEach(quest => {
+        if (!quest.completed) {
+            const questElement = document.createElement('div');
+            questElement.className = 'quest-item';
+            const span = document.createElement('span');
+            span.textContent = quest.task;
             
-            }
-        });
-        questsContainer.appendChild(questsFragment); // Append fragment
-    } else {
-        // Show empty state
-        questsContainer.innerHTML = `<div class="quest-item"><span>No active quests in this region.</span></div>`;
-    }
-
-    // --- Load Boss (WITH "Challenge" button) ---
-    bossContainer.innerHTML = ''; // Clear boss
-    if (regionData.boss) {
-        if (!regionData.boss.completed) {
-    
-            const boss = regionData.boss;
-            const bossSpan = document.createElement('span');
-            bossSpan.textContent = boss.task;
-
-            const bossButton = document.createElement('button');
-            bossButton.className = 'quest-btn';
-            bossButton.textContent = `Challenge Boss (+${DEFAULT_BOSS_XP} XP)`;
+            const button = document.createElement('button');
+            button.className = 'quest-btn';
+            button.textContent = `Complete (+${DEFAULT_QUEST_XP} XP)`;
+            button.addEventListener('click', () => completeQuest(button, DEFAULT_QUEST_XP, quest));
             
-            bossButton.addEventListener('click', () => {
-                completeBoss(bossButton, DEFAULT_BOSS_XP, boss); 
-            });
-
-            bossContainer.appendChild(bossSpan);
-            bossContainer.appendChild(bossButton);
-        
-        // --- ADD THIS "ELSE" BLOCK ---
-        } else {
-            bossContainer.innerHTML = `<span>Boss Defeated! ✅</span>`;
+            questElement.appendChild(span);
+            questElement.appendChild(button);
+            questsFragment.appendChild(questElement);
         }
-        
-    } else {
-        bossContainer.innerHTML = `<span>No active boss in this region.</span>`;
+    });
+    questsContainer.appendChild(questsFragment);
+
+    // Handle Boss Quests
+    bossContainer.innerHTML = '';
+    if (regionData.boss && !regionData.boss.completed) {
+        const boss = regionData.boss;
+        const bossSpan = document.createElement('span');
+        bossSpan.textContent = boss.task;
+        const bossButton = document.createElement('button');
+        bossButton.className = 'quest-btn';
+        bossButton.textContent = `Challenge Boss (+${DEFAULT_BOSS_XP} XP)`;
+        bossButton.addEventListener('click', () => completeBoss(bossButton, DEFAULT_BOSS_XP, boss));
+
+        bossContainer.appendChild(bossSpan);
+        bossContainer.appendChild(bossButton);
+    } else if (regionData.boss && regionData.boss.completed) {
+        bossContainer.innerHTML = `<span>Boss Defeated! ✅</span>`;
     }
 }
 
@@ -464,6 +474,8 @@ function createTaskElement(task) {
     
     const span = document.createElement('span');
     span.textContent = label;
+    span.style.cursor = 'pointer';
+    span.addEventListener('click', () => openQuestModal(task));
     taskElement.appendChild(span);
 
     // Create a wrapper for the buttons
@@ -502,6 +514,78 @@ function createTaskElement(task) {
     
     taskElement.appendChild(actionsWrapper);
     return taskElement;
+}
+
+let activeQuestId = null; // A global variable to track which quest is being edited
+
+function openQuestModal(task) {
+    activeQuestId = task.id; // Store the ID of the quest we are editing
+    console.log("Opening modal for task:", task);
+    
+    // 1. Find all the form elements
+    const titleInput = document.getElementById('questTitleInput');
+    const regionSelect = document.getElementById('questRegionSelect');
+    const logTextarea = document.getElementById('questLogTextarea');
+    const isBossInput = document.getElementById('questIsBossInput');
+
+    // 2. Fill the form with the task's data
+    titleInput.value = task.task || '';
+    regionSelect.value = task.region || 'Forest';
+    logTextarea.value = task.description || '';
+    isBossInput.checked = task.isBoss || false;
+    
+    document.getElementById('questModal').style.display = 'flex';
+}
+
+function closeQuestModal() {
+    document.getElementById('questModal').style.display = 'none';
+    activeQuestId = null; // Clear the active quest ID
+}
+
+function saveQuestChanges() {
+    console.log("Saving changes for quest ID:", activeQuestId);
+    // We'll build the save logic in the next step
+    closeQuestModal();
+}
+
+function duplicateQuest() {
+    if (!activeQuestId) return;
+    const taskIndex = sheetData.allTasks.findIndex(t => t.id === activeQuestId);
+    if (taskIndex === -1) return;
+
+    const originalTask = sheetData.allTasks[taskIndex];
+
+    // 1. Create the fresh copy
+    const newTask = {
+        ...originalTask, // Copy region, task name, isBoss, description
+        id: `task-${Math.random().toString(36).slice(2, 11)}`,
+        status: 'todo', // Always starts as 'todo'
+        completionDate: null, // New copy has no completion date
+        shouldDuplicate: false // Reset this flag on the new copy
+    };
+    
+    // 2. Add it to the list
+    sheetData.allTasks.push(newTask);
+    
+    // 3. Save and refresh
+    saveToLocal();
+    loadDataFromSheet();
+    closeQuestModal();
+    showStatus(`Quest '${originalTask.task}' duplicated.`, 'connected', 3000);
+}
+
+
+function toggleRepeatable(taskId) {
+    if (!sheetData || !sheetData.allTasks) return;
+    const taskIndex = sheetData.allTasks.findIndex(t => t.id === taskId);
+    if (taskIndex === -1) return;
+
+    const task = sheetData.allTasks[taskIndex];
+    // Toggle the boolean value
+    task.shouldDuplicate = !task.shouldDuplicate;
+
+    saveToLocal();
+    loadDataFromSheet(); // Refresh the UI to update the button's text
 }
 
 function loadStats(stats) {
@@ -573,6 +657,9 @@ function completeTask(button, xp, task, isBoss) {
 
     // 2. Update its status
     sheetData.allTasks[taskIndex].status = 'done';
+
+    // Record the completion date (YYYY-MM-DD) on the task itself
+    sheetData.allTasks[taskIndex].completionDate = new Date().toISOString().split('T')[0];
     
     // 3. Update Stats
     totalXP += xp;
@@ -599,10 +686,12 @@ function completeTask(button, xp, task, isBoss) {
     }
     
     // 4. Update UI (This is the only change from the old version)
-    button.textContent = 'Completed! ✅';
-    button.disabled = true;
+    if (button) { // Check if a button was passed
+        button.textContent = 'Completed! ✅';
+        button.disabled = true;
+        button.parentElement.classList.add('completed');
+    }
     ThreeMap.updateQuestStatus(task.id, 'done');
-    button.parentElement.classList.add('completed');
         
     // 5. Show celebration
     showCelebration(xp, isBoss, isBoss ? `BOSS DEFEATED! +${xp} XP!` : `Quest Complete! +${xp} XP!`);
@@ -616,11 +705,11 @@ function completeTask(button, xp, task, isBoss) {
 }
 
 function completeQuest(button, xp, quest) {
-    completeTask(button, xp, quest, false);
+    completeTask(button, xp, quest, false); 
 }
 
 function completeBoss(button, xp, boss) {
-    completeTask(button, xp, boss, true);
+    completeTask(button, xp, boss, true); 
 }
 
 // --- Function to move a task from 'inProgress' back to 'todo' ---
@@ -924,6 +1013,18 @@ document.addEventListener('DOMContentLoaded', function() {
     if (saveSettingsBtn) {
         saveSettingsBtn.addEventListener('click', saveSettings);
     }
+    const closeQuestModalBtn = document.getElementById('closeQuestModalBtn');
+    if (closeQuestModalBtn) {
+        closeQuestModalBtn.addEventListener('click', closeQuestModal);
+    }
+    const saveQuestBtn = document.getElementById('saveQuestBtn');
+    if (saveQuestBtn) {
+        saveQuestBtn.addEventListener('click', saveQuestChanges);
+    }
+    const duplicateQuestBtn = document.getElementById('duplicateQuestBtn');
+    if (duplicateQuestBtn) {
+        duplicateQuestBtn.addEventListener('click', duplicateQuest);
+    }
     
     // Auto-load from local storage if available
     try {
@@ -966,38 +1067,23 @@ document.addEventListener('DOMContentLoaded', function() {
 function generateSheetTemplate() {
     return `# --- MASTER QUEST LIST ---
 # This is the single source of truth for all quests and bosses.
-# Status: todo, inProgress, review, done
 # Region: Forest, Mountains, Ocean, Kingdom
 # Is_Boss: TRUE or FALSE
 #
-# Quests with "inProgress" status will appear on the Adventure Map.
-# All other quests will appear on the Guild Board.
 ## TASKS
-Region,Task,Status,Is_Boss
-Forest,Solve 2 Easy LeetCode Problems,todo,FALSE
-Forest,Practice Binary Search Problems,todo,FALSE
-Forest,Timed Medium Problem,todo,TRUE
-Mountains,Study Load Balancing Concepts,todo,FALSE
-Mountains,Design URL Shortener System,todo,TRUE
-Ocean,Refactor Code & Add Comments,todo,FALSE
-Ocean,Complete Resume Deep Dive Session,todo,TRUE
-Kingdom,Practice 'Tell me about yourself',todo,FALSE
-Kingdom,30-Min Mock Interview,todo,TRUE
-
-# --- PLAYER STATS ---
-# streak: Your current day streak
-# totalXP: Your lifetime experience points
-# lastCompletedDate: The last day you completed a quest (YYYY-MM-DD)
-## STATS
-Metric,Value
-streak,0
-totalXP,0
-lastCompletedDate,
-currentWeekStartDate,
-monthlyRewardClaimed,
-lastMonthLevel
+Region,Task,Is_Boss,Description
+Forest,Solve 2 Easy LeetCode Problems,FALSE,""
+Forest,Practice Binary Search Problems,FALSE,""
+Forest,Timed Medium Problem,TRUE,""
+Mountains,Study Load Balancing Concepts,FALSE,""
+Mountains,Design URL Shortener System,TRUE,""
+Ocean,Refactor Code & Add Comments,FALSE,""
+Ocean,Complete Resume Deep Dive Session,TRUE,""
+Kingdom,Practice 'Tell me about yourself',FALSE,""
+Kingdom,30-Min Mock Interview,TRUE,"Mock interview with Jane Doe."
 `;
 }
+
 function addNewQuest() {
     const input = document.getElementById('newQuestInput');
     const regionSelect = document.getElementById('newQuestRegion');

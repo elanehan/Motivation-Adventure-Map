@@ -70,6 +70,32 @@ body {
     gap: 10px;
 }
 
+.settings-form textarea {
+    width: 100%;
+    padding: 10px;
+    border-radius: 5px;
+    border: none;
+    font-size: 1em;
+    font-family: 'Arial', sans-serif;
+    resize: vertical; /* Allow user to resize it vertically */
+}
+
+.quest-options {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 15px;
+}
+
+/* --- Style for active repeatable button --- */
+.btn-active {
+    background: #17a2b8; /* A nice teal/info color */
+    box-shadow: inset 0 0 5px rgba(0,0,0,0.3);
+}
+.btn-active:hover {
+    background: #138496;
+}
+
 .container {
     max-width: 1200px;
     margin: 0 auto;
@@ -570,7 +596,7 @@ body {
 }
 
 .btn-primary:hover {
-    background: #5a67d8;
+    background: #ceb40d;
     transform: translateY(-2px);
 }
 

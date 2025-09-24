@@ -10,6 +10,38 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 </head>
 <body>
+    <div id="questModal" class="settings-overlay" style="display: none;">
+        <div class="settings-content">
+            <h2>Quest Details</h2>
+            <div class="settings-form">
+                <label for="questTitleInput">Quest Title:</label>
+                <input type="text" id="questTitleInput">
+
+                <label for="questRegionSelect">Region:</label>
+                <select id="questRegionSelect">
+                    <option value="Forest">🌲 Forest</option>
+                    <option value="Mountains">⛰️ Mountains</option>
+                    <option value="Ocean">🌊 Ocean</option>
+                    <option value="Kingdom">🏰 Kingdom</option>
+                </select>
+
+                <label for="questLogTextarea">Description / Log:</label>
+                <textarea id="questLogTextarea" rows="4" placeholder="Log your progress, add notes, or describe the quest..."></textarea>
+
+                <div class="quest-options">
+                    <div class="boss-checkbox-wrapper">
+                        <input type="checkbox" id="questIsBossInput">
+                        <label for="questIsBossInput">♖ Boss Quest?</label>
+                    </div>
+                </div>
+            </div>
+            <div class="settings-actions">
+                <button id="closeQuestModalBtn" class="btn-primary">Close</button>
+                <button id="saveQuestBtn" class="btn-primary">Save Changes</button>
+                <button id="duplicateQuestBtn" class="btn-primary">Duplicate</button>
+            </div>
+        </div>
+    </div>
     <div id="settingsPanel" class="settings-overlay" style="display: none;">
         <div class="settings-content">
             <h2>Customize Your Adventure</h2>
@@ -31,7 +63,7 @@
             </div>
             <div class="settings-actions">
                 <button id="saveSettingsBtn" class="btn-primary">Save Settings</button>
-                <button id="closeSettingsBtn" class="btn-secondary">Close</button>
+                <button id="closeSettingsBtn" class="btn-primary">Close</button>
             </div>
         </div>
 </div>

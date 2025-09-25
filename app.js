@@ -543,9 +543,21 @@ function closeQuestModal() {
 }
 
 function saveQuestChanges() {
-    console.log("Saving changes for quest ID:", activeQuestId);
-    // We'll build the save logic in the next step
-    closeQuestModal();
+    if (!activeQuestId) return;
+    const taskIndex = sheetData.allTasks.findIndex(t => t.id === activeQuestId);
+    if (taskIndex === -1) return;
+    
+    // Read the new values from the pop-up's form fields
+    const task = sheetData.allTasks[taskIndex];
+    task.task = document.getElementById('questTitleInput').value;
+    task.region = document.getElementById('questRegionSelect').value;
+    task.description = document.getElementById('questLogTextarea').value;
+    task.isBoss = document.getElementById('questIsBossInput').checked;
+
+    saveToLocal(); // Save the changes
+    loadDataFromSheet(); // Reload the whole UI to show the changes
+    closeQuestModal(); // Close the pop-up
+    showStatus('Quest updated!', 'connected', 3000);
 }
 
 function duplicateQuest() {

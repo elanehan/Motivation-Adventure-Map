@@ -614,8 +614,7 @@ function updateLevel(xp) {
     let newLevel = 1;
     let nextLevelXP = LEVEL_THRESHOLDS[1];
     let playerLevelEl = document.getElementById('playerLevel');
-    
-    if (!playerLevelEl) return; // Safety check
+    if (!playerLevelEl) return;
 
     // Find current level
     for (let i = LEVEL_THRESHOLDS.length - 1; i >= 0; i--) {
@@ -625,16 +624,15 @@ function updateLevel(xp) {
             break;
         }
     }
-    
-    // Check for level up
-    const oldLevel = playerLevelEl.dataset.level || 1;
-    if (newLevel > oldLevel) {
+
+    // Only show Level Up popup if this is a true level up event (not initial load)
+    const oldLevel = sheetData.stats.prevLevel;
+    if (typeof oldLevel === 'number' && newLevel > oldLevel && sheetData.stats.totalXP !== undefined && sheetData.stats.totalXP !== 0) {
         showCelebration(0, false, `LEVEL UP! You are now Level ${newLevel}!`);
-        playerLevelEl.dataset.level = newLevel;
     }
-    
+    sheetData.stats.prevLevel = newLevel;
     playerLevelEl.textContent = newLevel;
-    document.getElementById('currentXP').textContent = xp; // Show total XP
+    document.getElementById('currentXP').textContent = xp;
     document.getElementById('nextLevelXP').textContent = nextLevelXP;
 }
 

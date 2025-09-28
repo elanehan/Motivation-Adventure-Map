@@ -407,7 +407,8 @@ function loadRegionQuests(regionKey, regionData) {
     if (regionData.boss && !regionData.boss.completed) {
         const boss = regionData.boss;
         const bossSpan = document.createElement('span');
-        bossSpan.textContent = boss.task;
+        // Clean up boss title: trim spaces and remove surrounding quotes
+        bossSpan.textContent = (boss.task || '').trim().replace(/^"+|"+$/g, '');
         const bossButton = document.createElement('button');
         bossButton.className = 'quest-btn';
         bossButton.textContent = `Challenge Boss (+${DEFAULT_BOSS_XP} XP)`;

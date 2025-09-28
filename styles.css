@@ -678,3 +678,46 @@ body {
     100% { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 1; }
 }
 
+/* --- Region Board Button Alignment: Horizontal, Right of Title --- */
+.region .quest-item {
+    flex-direction: row;
+    align-items: center;
+}
+.region .quest-actions {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+}
+.region .quest-btn {
+    width: auto;
+    margin-left: 10px;
+    margin-bottom: 0;
+}
+
+/* --- Region Board Quest Title: Allow Wrapping, Button Single Line --- */
+.region .quest-item span {
+    white-space: normal;
+    word-break: break-word;
+    max-width: 70%;
+    display: block;
+}
+.region .quest-item {
+    display: flex;
+    align-items: flex-start;
+    flex-wrap: nowrap;
+}
+.region .quest-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+    min-width: 120px;
+}
+.region .quest-btn {
+    white-space: nowrap;
+    width: auto;
+    margin-left: 10px;
+    margin-bottom: 0;
+    align-self: flex-end;
+}
+

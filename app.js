@@ -387,13 +387,14 @@ function loadRegionQuests(regionKey, regionData) {
             const questElement = document.createElement('div');
             questElement.className = 'quest-item';
             const span = document.createElement('span');
-            span.textContent = quest.task;
-            
+            // Clean up quest title: trim spaces and remove surrounding quotes
+            span.textContent = (quest.task || '').trim().replace(/^"+|"+$/g, '');
+
             const button = document.createElement('button');
             button.className = 'quest-btn';
             button.textContent = `Complete (+${DEFAULT_QUEST_XP} XP)`;
             button.addEventListener('click', () => completeQuest(button, DEFAULT_QUEST_XP, quest));
-            
+
             questElement.appendChild(span);
             questElement.appendChild(button);
             questsFragment.appendChild(questElement);
@@ -462,16 +463,17 @@ function createTaskElement(task) {
     taskElement.className = 'task-item';
 
     // --- Create the new label with emojis ---
-    let label = task.task; // Start with the task name
-    
+    // Clean up quest title: trim spaces and remove surrounding quotes
+    let label = (task.task || '').trim().replace(/^"+|"+$/g, '');
+
     if (task.isBoss) {
-        label += ` ${BOSS_EMOJI}`; // Add boss emoji
+        label += ` ${BOSS_EMOJI}`;
     }
     if (REGION_EMOJIS[task.region]) {
-        label += ` ${REGION_EMOJIS[task.region]}`; // Add region emoji
+        label += ` ${REGION_EMOJIS[task.region]}`;
     }
     // --- End new label logic ---
-    
+
     const span = document.createElement('span');
     span.textContent = label;
     span.style.cursor = 'pointer';
@@ -678,17 +680,17 @@ function completeTask(button, xp, task, isBoss) {
     sheetData.stats.totalXP = totalXP;
     
     // --- New Streak Logic ---
-    const today = new Date().toISOString().split('T')[0];
-    if (sheetData.stats.lastCompletedDate !== today) {
+    const todayStr = new Date().toISOString().split('T')[0];
+    if (sheetData.stats.lastCompletedDate !== todayStr) {
         // It's a new day, increment streak.
         // 'checkDateBasedResets' already reset it to 0 if we missed a day.
         sheetData.stats.streak++;
-        sheetData.stats.lastCompletedDate = today;
+        sheetData.stats.lastCompletedDate = todayStr;
     }
     // --- NEW: Daily Reward Tracking Logic ---
-    if (!sheetData.stats.dailyCompletions || sheetData.stats.dailyCompletions.date !== today) {
+    if (!sheetData.stats.dailyCompletions || sheetData.stats.dailyCompletions.date !== todayStr) {
         // It's a new day (or first time), reset the daily tracker
-        sheetData.stats.dailyCompletions = { date: today, regions: [] };
+        sheetData.stats.dailyCompletions = { date: todayStr, regions: [] };
     }
     
     // Add the region (if it's not already there)
@@ -891,49 +893,45 @@ function updateRewards(completedBosses, totalBosses) {
 function checkDateBasedResets() {
     if (!sheetData || !sheetData.stats) return;
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // Standardize to midnight
+    const todayStr = new Date().toISOString().split('T')[0];
+    const lastCompletedStr = sheetData.stats.lastCompletedDate || "";
 
-    // --- 1. DAILY STREAK RESET ---
-    const lastCompleted = new Date(sheetData.stats.lastCompletedDate || 0);
-    lastCompleted.setHours(0, 0, 0, 0);
-    
-    const yesterday = new Date(today);
-    yesterday.setDate(today.getDate() - 1);
+    // Calculate yesterday's date string
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
 
-    if (lastCompleted.getTime() !== yesterday.getTime() && lastCompleted.getTime() !== today.getTime()) {
+    // If lastCompletedDate is not today or yesterday, reset streak
+    if (lastCompletedStr !== todayStr && lastCompletedStr !== yesterdayStr) {
         sheetData.stats.streak = 0;
     }
-    
+
     // --- 2. WEEKLY BOSS RESET ---
     if (!sheetData.stats.currentWeekStartDate) {
         // If the week has *never* been set, set it to today to start the clock.
-        sheetData.stats.currentWeekStartDate = today.toISOString();
+        sheetData.stats.currentWeekStartDate = new Date().toISOString();
     }
 
     let weekStartDate = new Date(sheetData.stats.currentWeekStartDate);
     weekStartDate.setHours(0, 0, 0, 0);
-    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
     const daysDifference = (today - weekStartDate) / (1000 * 60 * 60 * 24);
     if (daysDifference >= 7) {
         resetWeeklyBosses(); 
         sheetData.stats.currentWeekStartDate = today.toISOString();
         showStatus('A new week has begun! Boss quests have been reset.', 'connected', 4000);
     }
-    
+
     // --- 3. MONTHLY REWARD RESET ---
     const lastClaim = new Date(sheetData.stats.lastMonthlyClaim || 0);
     if (today.getMonth() !== lastClaim.getMonth() || today.getFullYear() !== lastClaim.getFullYear()) {
         // It's a new month!
         const playerLevelEl = document.getElementById('playerLevel');
-        
-        // Only update the 'lastMonthLevel' *if* a claim has been made before.
-        // Otherwise, it stays 0, so the user can get their first reward.
         if (sheetData.stats.lastMonthlyClaim) { 
             const currentLevel = Number(playerLevelEl.textContent || 1);
             sheetData.stats.lastMonthLevel = currentLevel; 
         }
-
         sheetData.stats.monthlyRewardClaimed = false; // Reset the flag
     }
 }

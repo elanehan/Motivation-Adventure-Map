@@ -331,11 +331,11 @@ const ThreeMap = {
         const yRotation = (seed % 100) / 100 * (Math.PI * 2);
         
         const mountainColors = [
-            0x495057, // Rock Mountain (Grey)
+            0xA9A9A9, // Light Gray
             0xfffafa, // Snow Mountain (White)
-            0x132a13, // Green Mountain (Mossy)
-            0x441d0e, // Grand Canyon (Orange/Brown)
-            0xbf3100  // Red Leaves Mountain (Firebrick)
+            0x25a244, // Light Green
+            0xFFD700, // Gold
+            0xBF3100  // Red Leaves Mountain (Firebrick)
         ];
         const randomMtnColor = mountainColors[seed % mountainColors.length];
         
@@ -358,8 +358,9 @@ const ThreeMap = {
         const coralColors = [
             0xFF6F61, // Living Coral (Red-Pink)
             0x40E0D0, // Turquoise (Blue-Green)
-            0xDA70D6, // Orchid (Purple-Pink)
-            0xFFA500  // Orange
+            0xff70a6, // Orchid (Purple-Pink)
+            0xdc2f02, // Orange
+            0xf7b801  // Yellow
         ];
         const randomColor = coralColors[seed % coralColors.length];
         const mat = new THREE.MeshPhongMaterial({ color: randomColor });
@@ -368,7 +369,7 @@ const ThreeMap = {
         reef.userData.baseColor = randomColor; 
 
         // --- 4. Use the seed for branches ---
-        const numBranches = (seed % 4) + 3; // 3 to 6 branches
+        const numBranches = (seed % 4) + 4; // 4 to 7 branches
         let mainBranch = null; 
 
         for (let i = 0; i < numBranches; i++) {
@@ -409,11 +410,11 @@ const ThreeMap = {
 
         // --- 3. Use the seed for the roof color ---
         const roofColors = [
-            0x660708, // Red
-            0x034732, // Dark Green
-            0x003f88, // Blue
-            0xff758f, // Pink
-            0x440381  // Purple
+            0xc52233, // Red
+            0x87a330, // Green
+            0x4ea8de, // Blue
+            0xfb6376, // Pink
+            0x7400b8  // Purple
         ]; 
         const randomColor = roofColors[seed % roofColors.length];
         const roofMat = new THREE.MeshPhongMaterial({ color: randomColor });
